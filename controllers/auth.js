@@ -1,7 +1,10 @@
 const User = require('../models/user');
 const { StatusCodes } = require('http-status-codes');
 const CustomError = require('../errors');
+const jwt = require('jsonwebtoken')
 const { attachCookiesToResponse, createTokenUser } = require('../utils');
+const { createeJWT, aCTR } = require('../utils');
+const { date } = require('joi');
 
 const register = async(req, res) => {
     const { email, name, password } = req.body;
@@ -16,21 +19,20 @@ const register = async(req, res) => {
     const role = isFirstAccount ? 'admin' : 'user';
 
     const user = await User.create({ name, email, password, role });
-    const tokenUser = createTokenUser(user);
-    attachCookiesToResponse({ res, user: tokenUser });
+    const tokenUser = { name: user.name, userId: user._id, role: user.role }
+    aCTR({ res, user: tokenUser })
+        // attachCookiesToResponse({ res, user: tokenUser });
     res.status(StatusCodes.CREATED).json({ user: tokenUser });
 };
 
 const login = async(req, res) => {
-    const { email, password } = req.body;
-
+    const { email, password } = req.body
     if (!email || !password) {
-        throw new CustomError.BadRequestError('Please provide email and password');
+        throw new CustomError.BadRequestError('gib me both')
     }
-    const user = await User.findOne({ email });
-
+    const user = await User.findOne({ email })
     if (!user) {
-        throw new CustomError.UnauthenticatedError('Invalid Credentials');
+        throw new CustomError.UnauthenticatedError("register 1st")
     }
 
     const isPasswordCorrect = await user.comparePassword(password);
@@ -41,15 +43,15 @@ const login = async(req, res) => {
     attachCookiesToResponse({ res, user: tokenUser });
 
     res.status(StatusCodes.OK).json({ user: tokenUser });
-};
+}
+
 const logout = async(req, res) => {
     res.cookie('token', 'logout', {
         httpOnly: true,
-        expires: new Date(Date.now() + 1000),
-    });
-    res.status(StatusCodes.OK).json({ msg: 'user logged out!' });
-};
-
+        expires: new Date(Date.now())
+    })
+    res.status(StatusCodes.OK).json('gg bitch')
+}
 module.exports = {
     register,
     login,
